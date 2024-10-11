@@ -5,6 +5,7 @@ import {
   postComparisonStartups,
   postCancelMyStartups,
   postCancelComparisonStartups,
+  getSelections,
 } from "../controller/selectionsController.js";
 
 const router = express.Router();
@@ -24,4 +25,7 @@ router.post(
   asyncHandler(postCancelComparisonStartups),
 );
 
+/* //buff */
+// 선택 정보 조회 API 추가
+router.get("/", asyncHandler(getSelections));
 export default router;

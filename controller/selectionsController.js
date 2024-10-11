@@ -205,3 +205,72 @@ export const postCancelComparisonStartups = async (req, res) => {
 
   res.send({ updateStartups, newOrUpdateComparisons });
 };
+
+// src/controller/selectionsController.js
+/* //buff */
+export const getSelections = async (req, res) => {
+  const { sessionId } = req.query;
+
+  if (!sessionId) {
+    return res.status(400).json({ error: "sessionId가 필요합니다." });
+  }
+
+  try {
+    const selectedStartups = await prisma.selection.findMany({
+      where: {
+        sessionId,
+        isSelected: true,
+      },
+      /* Selection 에서 같은 sessionId 에 isSelected 값이 true 로 여러개 남아 있어 임시로 1개만 리턴하게 함
+      기업 비교하기 버튼 클릭시 기존의 sessionId에 해당하는 값이 Selection 과 Comparison 에 있으면 isSelected, isCompared 를 false 로 하는 로직 점검이 필요해 보입니다.
+      */
+      orderBy: {
+        updatedAt: 'desc', // updatedAt을 기준으로 내림차순 정렬
+      },
+      take: 1, // 가장 최신의 1개 항목만 가져옴
+      include: {
+        startup: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            image: true,
+            category: true,
+            simInvest: true,
+            revenue: true,
+            employees: true,
+          },
+        },
+      },
+    });
+
+    const comparisonStartups = await prisma.comparison.findMany({
+      where: {
+        sessionId,
+        isCompared: true,
+      },
+      include: {
+        startup: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            image: true,
+            category: true,
+            simInvest: true,
+            revenue: true,
+            employees: true,
+          },
+        },
+      },
+    });
+
+    res.status(200).json({
+      selectedStartups: selectedStartups.map((selection) => selection.startup),
+      comparisonStartups: comparisonStartups.map((comparison) => comparison.startup),
+    });
+  } catch (error) {
+    console.error("선택 정보 불러오기 실패:", error);
+    res.status(500).json({ error: "선택 정보를 불러오는 데 실패했습니다." });
+  }
+};
